@@ -104,7 +104,7 @@
                             <i data-lucide="maximize-2" class="w-4 h-4 text-blue-600"></i> Ukuran Kaos
                         </label>
                         
-                        <div class="grid grid-cols-3 gap-3 md:grid-cols-6">
+                        <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-7">
                             <!-- S -->
                             <label class="cursor-pointer">
                                 <input type="radio" name="size" value="S" class="peer sr-only" required>
@@ -147,6 +147,27 @@
                                     3XL
                                 </div>
                             </label>
+                            <!-- Lainnya (Custom) -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="Lainnya" id="size-other" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-xs md:text-sm flex items-center justify-center min-h-[48px]">
+                                    Lainnya
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Input Kustom Ukuran Kaos (Hanya muncul jika "Lainnya" dipilih) -->
+                        <div id="custom-size-container" class="hidden mt-3 p-3 bg-slate-50 rounded-xl border border-slate-150 transition-all duration-300">
+                            <label for="custom-size-input" class="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+                                <i data-lucide="pencil-line" class="w-3.5 h-3.5 text-blue-500"></i> Tulis Ukuran Kustom Anda:
+                            </label>
+                            <input 
+                                type="text" 
+                                id="custom-size-input" 
+                                placeholder="Contoh: 4XL, XS, Anak-10, dll..." 
+                                class="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                autocomplete="off"
+                            >
                         </div>
                     </div>
 
@@ -282,7 +303,7 @@
                     <!-- Info Stat Kaos -->
                     <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
                         <span>Total Pemesan: <strong id="stats-total" class="text-slate-800 text-sm">0</strong> siswa</span>
-                        <span class="flex gap-2" id="stats-sizes">
+                        <span class="flex flex-wrap gap-1.5 justify-end max-w-[60%]" id="stats-sizes">
                             <!-- Ukuran statistika -->
                         </span>
                     </div>
@@ -354,6 +375,27 @@
         const statsTotal = document.getElementById('stats-total');
         const statsSizes = document.getElementById('stats-sizes');
         const refreshIcon = document.getElementById('refresh-icon');
+
+        // Elemen Ukuran Kustom
+        const sizeRadios = document.querySelectorAll('input[name="size"]');
+        const customSizeContainer = document.getElementById('custom-size-container');
+        const customSizeInput = document.getElementById('custom-size-input');
+
+        // Deteksi Perubahan Radio Button untuk Menampilkan/Menyembunyikan Kolom Ukuran Kustom
+        sizeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === 'Lainnya') {
+                    customSizeContainer.classList.remove('hidden');
+                    customSizeInput.required = true;
+                    customSizeInput.focus();
+                } else {
+                    customSizeContainer.classList.add('hidden');
+                    customSizeInput.required = false;
+                    customSizeInput.value = '';
+                    customSizeInput.setCustomValidity('');
+                }
+            });
+        });
 
         // Sistem Navigasi Tampilan (Views Router)
         function navigateToView(viewName) {
@@ -579,7 +621,20 @@
 
             const sizeRadio = document.querySelector('input[name="size"]:checked');
             if (!sizeRadio) return;
-            const chosenSize = sizeRadio.value;
+            
+            let chosenSize = sizeRadio.value;
+
+            // Jika memilih ukuran kustom, validasi dan ambil data dari input teks
+            if (chosenSize === 'Lainnya') {
+                const customValue = customSizeInput.value.trim();
+                if (!customValue) {
+                    customSizeInput.setCustomValidity('Harap tulis ukuran kustom Anda.');
+                    customSizeInput.reportValidity();
+                    return;
+                }
+                chosenSize = customValue;
+            }
+            customSizeInput.setCustomValidity('');
 
             // Aktifkan Loading
             submitBtn.disabled = true;
@@ -692,7 +747,7 @@
             // Susun HTML statistika ukuran
             let statsHtml = '';
             Object.keys(sizeCounts).sort().forEach(size => {
-                statsHtml += `<span class="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full text-[10px]">${size}: ${sizeCounts[size]}</span>`;
+                statsHtml += `<span class="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap">${size}: ${sizeCounts[size]}</span>`;
             });
             statsSizes.innerHTML = statsHtml;
             statsTotal.textContent = dataArray.length;
@@ -791,6 +846,13 @@
             clearSearchBtn.classList.add('hidden');
             searchResults.classList.add('hidden');
             classInput.value = '';
+            
+            // Sembunyikan & bersihkan input kustom
+            customSizeContainer.classList.add('hidden');
+            customSizeInput.required = false;
+            customSizeInput.value = '';
+            customSizeInput.setCustomValidity('');
+
             navigateToView('form');
         }
 
