@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Pemesanan Kaos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- Container Utama -->
+    <main class="flex-grow flex items-center justify-center p-4 md:p-8">
+        <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:shadow-2xl">
+            
+            <!-- Header Form -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white text-center relative">
+                <div class="absolute top-4 left-4 opacity-10">
+                    <i data-lucide="shirt" class="w-16 h-16"></i>
+                </div>
+                <h1 id="header-title" class="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">Form Pemesanan Kaos</h1>
+                <p id="header-subtitle" class="text-blue-100 text-sm md:text-base">Silakan cari nama Anda, pastikan kelas sesuai, dan pilih ukuran kaos Anda.</p>
+            </div>
+
+            <!-- Loader State saat Ambil Data Siswa -->
+            <div id="loader" class="p-8 text-center flex flex-col items-center justify-center space-y-4">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p id="loader-text" class="text-slate-500 text-sm font-medium">Mengambil data siswa dari Google Sheets...</p>
+            </div>
+
+            <!-- Error State jika Gagal Ambil Data -->
+            <div id="error-container" class="hidden p-8 text-center flex flex-col items-center justify-center space-y-4">
+                <div class="bg-red-50 text-red-600 p-3 rounded-full">
+                    <i data-lucide="alert-circle" class="w-12 h-12"></i>
+                </div>
+                <p class="text-slate-700 font-semibold">Gagal memuat data nama!</p>
+                <p class="text-xs text-slate-500 max-w-xs" id="error-message">Terjadi kesalahan koneksi atau URL CSV tidak valid.</p>
+                <button onclick="fetchSiswaData()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                    Coba Lagi
+                </button>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW 1: FORMULIR UTAMA -->
+            <!-- ========================================== -->
+            <div id="view-form" class="hidden">
+                <form id="order-form" class="p-6 space-y-6">
+                    
+                    <!-- Input 1: Pencarian Nama -->
+                    <div class="space-y-2 relative">
+                        <label class="block text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="user" class="w-4 h-4 text-blue-600"></i> Nama Lengkap
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="search-name" 
+                                placeholder="Ketik nama Anda untuk mencari..." 
+                                class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm md:text-base"
+                                autocomplete="off"
+                                required
+                            >
+                            <div class="absolute left-3 top-3.5 text-slate-400">
+                                <i data-lucide="search" class="w-5 h-5"></i>
+                            </div>
+                            <button 
+                                type="button" 
+                                id="clear-search" 
+                                class="hidden absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                            >
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown Hasil Pencarian -->
+                        <div 
+                            id="search-results" 
+                            class="hidden absolute z-10 w-full bg-white border border-slate-200 mt-1 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-slate-100"
+                        >
+                            <!-- Hasil pencarian disisipkan di sini -->
+                        </div>
+                    </div>
+
+                    <!-- Input 2: Kelas (Otomatis) -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="graduation-cap" class="w-4 h-4 text-blue-600"></i> Kelas
+                        </label>
+                        <input 
+                            type="text" 
+                            id="student-class" 
+                            placeholder="Akan terisi otomatis setelah memilih nama" 
+                            class="w-full px-4 py-3 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-not-allowed focus:outline-none text-sm md:text-base"
+                            readonly
+                            required
+                        >
+                    </div>
+
+                    <!-- Input 3: Ukuran Kaos -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="maximize-2" class="w-4 h-4 text-blue-600"></i> Ukuran Kaos
+                        </label>
+                        
+                        <div class="grid grid-cols-3 gap-3 md:grid-cols-6">
+                            <!-- S -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="S" class="peer sr-only" required>
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-sm md:text-base">
+                                    S
+                                </div>
+                            </label>
+                            <!-- M -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="M" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-sm md:text-base">
+                                    M
+                                </div>
+                            </label>
+                            <!-- L -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="L" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-sm md:text-base">
+                                    L
+                                </div>
+                            </label>
+                            <!-- XL -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="XL" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-sm md:text-base">
+                                    XL
+                                </div>
+                            </label>
+                            <!-- XXL -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="XXL" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-sm md:text-base">
+                                    XXL
+                                </div>
+                            </label>
+                            <!-- XXXL -->
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="3XL" class="peer sr-only">
+                                <div class="border border-slate-200 rounded-xl p-3 text-center transition hover:bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-bold text-xs md:text-sm flex items-center justify-center min-h-[48px]">
+                                    3XL
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Submit -->
+                    <button 
+                        type="submit" 
+                        id="submit-btn"
+                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span id="btn-text" class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i> Kirim Pemesanan
+                        </span>
+                        <span id="btn-loader" class="hidden flex items-center gap-2">
+                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Menyimpan Data...
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Tombol Navigasi Cepat ke List Data -->
+                <div class="px-6 pb-6 text-center border-t border-slate-100 pt-4">
+                    <button 
+                        onclick="navigateToView('list')" 
+                        class="text-sm text-slate-500 hover:text-blue-600 font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                        <i data-lucide="table-properties" class="w-4 h-4"></i> Lihat Siapa Saja yang Sudah Memesan
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW 2: HALAMAN SUKSES -->
+            <!-- ========================================== -->
+            <div id="view-success" class="hidden p-6 space-y-6 text-center">
+                <div class="mx-auto w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center animate-bounce">
+                    <i data-lucide="badge-check" class="w-10 h-10"></i>
+                </div>
+                
+                <div class="space-y-2">
+                    <h2 class="text-2xl font-extrabold text-slate-800">Pesanan Berhasil Dicatat!</h2>
+                    <p class="text-sm text-slate-500 px-4">Terima kasih, data Anda telah dikirimkan secara langsung dan aman ke database Google Sheets.</p>
+                </div>
+
+                <!-- Detail Rincian Pesanan -->
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left space-y-3 max-w-sm mx-auto">
+                    <div class="flex justify-between py-1.5 border-b border-slate-200/60 text-sm">
+                        <span class="text-slate-500">Nama Lengkap:</span>
+                        <span id="summary-name" class="font-bold text-slate-800 text-right">-</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 border-b border-slate-200/60 text-sm">
+                        <span class="text-slate-500">Kelas:</span>
+                        <span id="summary-class" class="font-bold text-slate-800 text-right">-</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 text-sm">
+                        <span class="text-slate-500">Ukuran Kaos:</span>
+                        <span id="summary-size" class="font-extrabold text-blue-600 text-base">-</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi -->
+                <div class="flex flex-col gap-3 max-w-sm mx-auto pt-2">
+                    <button 
+                        onclick="navigateToView('list')" 
+                        class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-md hover:shadow-lg text-sm md:text-base"
+                    >
+                        <i data-lucide="table-properties" class="w-5 h-5"></i> Lihat Semua Pemesan
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button 
+                            onclick="resetForm()" 
+                            class="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-3 rounded-xl transition text-xs md:text-sm"
+                        >
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Pesanan Baru
+                        </button>
+                        <button 
+                            onclick="copyToClipboard()" 
+                            class="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-3 rounded-xl transition text-xs md:text-sm"
+                        >
+                            <i data-lucide="copy" class="w-4 h-4"></i> Salin Rincian
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW 3: DAFTAR DATA PEMESANAN (REAL-TIME) -->
+            <!-- ========================================== -->
+            <div id="view-list" class="hidden">
+                <!-- Toolbar Atas List -->
+                <div class="p-6 pb-2 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <button 
+                            onclick="navigateToView('form')" 
+                            class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 font-semibold transition"
+                        >
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Form
+                        </button>
+                        <button 
+                            onclick="fetchDatabaseOrders()" 
+                            class="p-2 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition"
+                            title="Segarkan Data"
+                        >
+                            <i data-lucide="rotate-cw" id="refresh-icon" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Input Pencarian Dalam Database -->
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="search-database" 
+                            placeholder="Cari nama pemesan di database..." 
+                            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                        <div class="absolute left-3 top-3 text-slate-400">
+                            <i data-lucide="search" class="w-4.5 h-4.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loader Khusus database -->
+                <div id="db-loader" class="p-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <p class="text-xs text-slate-500">Menghubungi Google Sheets database...</p>
+                </div>
+
+                <!-- Kontainer Utama List Data -->
+                <div id="db-content" class="hidden">
+                    <div class="max-h-80 overflow-y-auto border-t border-slate-100 divide-y divide-slate-100" id="orders-list-container">
+                        <!-- Item Pemesan dimasukkan disini secara dinamis -->
+                    </div>
+
+                    <!-- Info Stat Kaos -->
+                    <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+                        <span>Total Pemesan: <strong id="stats-total" class="text-slate-800 text-sm">0</strong> siswa</span>
+                        <span class="flex gap-2" id="stats-sizes">
+                            <!-- Ukuran statistika -->
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Alert Salin Berhasil -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50">
+        <i data-lucide="clipboard-check" class="text-green-400 w-5 h-5"></i>
+        <span>Rincian pesanan berhasil disalin!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="p-4 text-center text-xs text-slate-400">
+        <p>&copy; 2026 Form Pemesanan Kaos. Created with Koperasi Mandiri</p>
+    </footer>
+
+    <!-- Script Utama -->
+    <script>
+        // Inisialisasi ikon Lucide
+        lucide.createIcons();
+
+        // URL Google Sheets (Format CSV) untuk mengambil data siswa
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFXQvCXLHMYyjw4P-QEzaQ6iNjciofFGd7oXkDlVHse5BMa0Y0e45naiWiPOgNtwUtQEo2UqHhKjxn/pub?gid=882584150&single=true&output=csv';
+
+        // URL Web App Google Apps Script untuk menyimpan dan membaca data
+        const databaseUrl = 'https://script.google.com/macros/s/AKfycbzoUWv6M-iHsfYkwYYPJK5q7nL6uHmkjTB7CqhPfnI6wY4Twf67h_WjWrzllyqYDVTQ7Q/exec';
+
+        // State Penyimpanan Data
+        let siswaList = [];
+        let dbOrdersList = [];
+        let selectedStudent = null;
+
+        // Ambil DOM Elements
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+        const orderForm = document.getElementById('order-form');
+        const searchInput = document.getElementById('search-name');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const searchResults = document.getElementById('search-results');
+        const classInput = document.getElementById('student-class');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        
+        // Elemen Header & View Manager
+        const headerTitle = document.getElementById('header-title');
+        const headerSubtitle = document.getElementById('header-subtitle');
+        const viewForm = document.getElementById('view-form');
+        const viewSuccess = document.getElementById('view-success');
+        const viewList = document.getElementById('view-list');
+
+        // Elemen Ringkasan Sukses
+        const summaryName = document.getElementById('summary-name');
+        const summaryClass = document.getElementById('summary-class');
+        const summarySize = document.getElementById('summary-size');
+        const toast = document.getElementById('toast');
+
+        // Elemen List Database
+        const dbLoader = document.getElementById('db-loader');
+        const dbContent = document.getElementById('db-content');
+        const ordersListContainer = document.getElementById('orders-list-container');
+        const searchDatabaseInput = document.getElementById('search-database');
+        const statsTotal = document.getElementById('stats-total');
+        const statsSizes = document.getElementById('stats-sizes');
+        const refreshIcon = document.getElementById('refresh-icon');
+
+        // Sistem Navigasi Tampilan (Views Router)
+        function navigateToView(viewName) {
+            // Sembunyikan semua kontainer view
+            viewForm.classList.add('hidden');
+            viewSuccess.classList.add('hidden');
+            viewList.classList.add('hidden');
+
+            // Set Header & Tampilkan view spesifik
+            if (viewName === 'form') {
+                headerTitle.textContent = "Form Pemesanan Kaos";
+                headerSubtitle.textContent = "Silakan cari nama Anda, pastikan kelas sesuai, dan pilih ukuran kaos Anda.";
+                viewForm.classList.remove('hidden');
+            } else if (viewName === 'success') {
+                headerTitle.textContent = "Pemesanan Selesai!";
+                headerSubtitle.textContent = "Tanda bukti dan rincian data pemesanan Anda.";
+                viewSuccess.classList.remove('hidden');
+            } else if (viewName === 'list') {
+                headerTitle.textContent = "Daftar Pemesan Kaos";
+                headerSubtitle.textContent = "Daftar siswa yang sudah mengirimkan data ke database.";
+                viewList.classList.remove('hidden');
+                fetchDatabaseOrders(); // Ambil data real-time saat list dibuka
+            }
+            
+            // Re-render icon lucide yang baru dimuat
+            lucide.createIcons();
+        }
+
+        // Ambil data CSV Siswa dari Google Sheets (Dengan penanganan pembatas lokal & CORS Fallback)
+        async function fetchSiswaData() {
+            loader.classList.remove('hidden');
+            errorContainer.classList.add('hidden');
+            viewForm.classList.add('hidden');
+            loaderText.textContent = "Mengambil data siswa dari Google Sheets...";
+
+            try {
+                // Percobaan 1: Mengambil langsung file CSV (Metode Standar)
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('CORS_OR_NETWORK_ERROR');
+                
+                const csvText = await response.text();
+                parseCSV(csvText);
+                
+                if (siswaList.length === 0) throw new Error('Data CSV kosong.');
+
+                loader.classList.add('hidden');
+                navigateToView('form');
+            } catch (err) {
+                console.warn("Metode fetch CSV langsung diblokir CORS/jaringan. Menggunakan fallback Google Apps Script...", err);
+                
+                // Percobaan 2: Jika diblokir CORS, panggil API Web App Google Script Anda untuk mengambil data nama
+                loaderText.textContent = "Mengatasi CORS... Memuat data via Web App Google...";
+                try {
+                    const fallbackUrl = `${databaseUrl}?action=getSiswa`;
+                    const response = await fetch(fallbackUrl);
+                    
+                    if (!response.ok) throw new Error('Koneksi fallback gagal.');
+                    const result = await response.json();
+                    
+                    if (result && result.status === 'success' && result.data && result.data.length > 0) {
+                        siswaList = result.data;
+                        loader.classList.add('hidden');
+                        navigateToView('form');
+                    } else {
+                        throw new Error('Data nama siswa kosong pada database Google Sheets. Pastikan spreadsheet Anda memiliki tab bernama "gabungan" yang berisi kolom "Nama Lengkap" dan "Kelas".');
+                    }
+                } catch (fallbackErr) {
+                    console.error("Seluruh metode pemuatan data nama gagal:", fallbackErr);
+                    loader.classList.add('hidden');
+                    errorContainer.classList.remove('hidden');
+                    errorMessage.textContent = fallbackErr.message || "Gagal memuat data nama siswa. Silakan pastikan sheet 'gabungan' pada Google Sheets sudah diisi dengan benar.";
+                }
+            }
+        }
+
+        // Parsing data CSV cerdas (Mendukung pembatas koma ',' dan titik koma ';')
+        function parseCSV(text) {
+            const rows = text.split(/\r?\n/).filter(row => row.trim() !== "");
+            if (rows.length < 2) return;
+
+            // Deteksi pembatas otomatis (titik koma ';' vs koma ',')
+            const firstRow = rows[0];
+            const commaCount = (firstRow.match(/,/g) || []).length;
+            const semicolonCount = (firstRow.match(/;/g) || []).length;
+            const delimiter = semicolonCount > commaCount ? ';' : ',';
+
+            const parseLine = (line) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === delimiter && !inQuotes) {
+                        result.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current);
+                return result.map(val => val.replace(/^"|"$/g, '').trim());
+            };
+
+            const headers = parseLine(rows[0]);
+            let nameIdx = headers.findIndex(h => h.toLowerCase().includes('nama'));
+            let classIdx = headers.findIndex(h => h.toLowerCase().includes('kelas'));
+
+            if (nameIdx === -1) nameIdx = 0;
+            if (classIdx === -1) classIdx = 1;
+
+            siswaList = []; // Reset list
+            for (let i = 1; i < rows.length; i++) {
+                const columns = parseLine(rows[i]);
+                const namaSiswa = columns[nameIdx];
+                const kelasSiswa = columns[classIdx] || '-';
+
+                if (namaSiswa) {
+                    siswaList.push({
+                        nama: namaSiswa,
+                        kelas: kelasSiswa
+                    });
+                }
+            }
+            siswaList.sort((a, b) => a.nama.localeCompare(b.nama));
+        }
+
+        // Autocomplete Form Input Pencarian Nama
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            
+            if (query.length > 0) {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+
+            if (selectedStudent && selectedStudent.nama !== e.target.value) {
+                selectedStudent = null;
+                classInput.value = '';
+            }
+
+            if (query.length < 1) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+
+            const filtered = siswaList.filter(s => s.nama.toLowerCase().includes(query)).slice(0, 10);
+
+            if (filtered.length > 0) {
+                searchResults.innerHTML = '';
+                filtered.forEach(student => {
+                    const item = document.createElement('div');
+                    item.className = 'px-4 py-3 hover:bg-slate-100 cursor-pointer text-sm md:text-base transition-colors flex justify-between items-center';
+                    
+                    const regex = new RegExp(`(${query})`, 'gi');
+                    const highlightedName = student.nama.replace(regex, '<span class="font-bold text-blue-600">$1</span>');
+
+                    item.innerHTML = `
+                        <span>${highlightedName}</span>
+                        <span class="text-xs bg-slate-100 text-slate-500 py-1 px-2 rounded-full font-semibold border border-slate-200">${student.kelas}</span>
+                    `;
+                    
+                    item.addEventListener('click', () => {
+                        selectStudent(student);
+                    });
+                    searchResults.appendChild(item);
+                });
+                searchResults.classList.remove('hidden');
+            } else {
+                searchResults.innerHTML = `
+                    <div class="px-4 py-3 text-sm text-slate-500 italic text-center">
+                        Nama tidak ditemukan dalam daftar
+                    </div>
+                `;
+                searchResults.classList.remove('hidden');
+            }
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            classInput.value = '';
+            selectedStudent = null;
+            clearSearchBtn.classList.add('hidden');
+            searchResults.classList.add('hidden');
+            searchInput.focus();
+        });
+
+        function selectStudent(student) {
+            searchInput.value = student.nama;
+            classInput.value = student.kelas;
+            selectedStudent = student;
+            searchResults.classList.add('hidden');
+            clearSearchBtn.classList.remove('hidden');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Handler POST Simpan Data Kaos
+        orderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const queryName = searchInput.value.trim();
+            
+            if (!selectedStudent) {
+                const match = siswaList.find(s => s.nama.toLowerCase() === queryName.toLowerCase());
+                if (match) {
+                    selectedStudent = match;
+                    classInput.value = match.kelas;
+                } else {
+                    searchInput.setCustomValidity('Harap pilih nama valid yang tertera pada dropdown.');
+                    searchInput.reportValidity();
+                    return;
+                }
+            }
+
+            searchInput.setCustomValidity('');
+
+            const sizeRadio = document.querySelector('input[name="size"]:checked');
+            if (!sizeRadio) return;
+            const chosenSize = sizeRadio.value;
+
+            // Aktifkan Loading
+            submitBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+
+            try {
+                const payload = {
+                    nama: selectedStudent.nama,
+                    kelas: selectedStudent.kelas,
+                    ukuran: chosenSize
+                };
+
+                // Kirim POST ke API Web App Google Sheets
+                await fetch(databaseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(payload),
+                    mode: 'no-cors'
+                });
+
+                // Taruh ke template summary sukses
+                summaryName.textContent = selectedStudent.nama;
+                summaryClass.textContent = selectedStudent.kelas;
+                summarySize.textContent = chosenSize;
+
+                // Teks bukti transaksi
+                const messageText = `BUKTI PEMESANAN KAOS\n====================\nNama: ${selectedStudent.nama}\nKelas: ${selectedStudent.kelas}\nUkuran Kaos: ${chosenSize}\n====================\nStatus: Berhasil disimpan di database Google Sheets pada ${new Date().toLocaleString('id-ID')}`;
+                window.currentOrderMessage = messageText;
+
+                // Alihkan ke View Sukses secara dinamis
+                navigateToView('success');
+
+            } catch (err) {
+                console.error('Koneksi Gagal:', err);
+                
+                // Fallback jika internet pengguna terputus agar data tetap terlihat di layar
+                summaryName.textContent = selectedStudent.nama;
+                summaryClass.textContent = selectedStudent.kelas;
+                summarySize.textContent = chosenSize + " (Lokal/Gagal)";
+                navigateToView('success');
+            } finally {
+                // Matikan Loading
+                submitBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+            }
+        });
+
+        // ==========================================
+        // LOGIKA MEMBACA DATABASE & MERENDER LIST
+        // ==========================================
+        async function fetchDatabaseOrders() {
+            dbLoader.classList.remove('hidden');
+            dbContent.classList.add('hidden');
+            refreshIcon.classList.add('animate-spin');
+
+            try {
+                const response = await fetch(`${databaseUrl}?action=getOrders`);
+                if (!response.ok) throw new Error('Gagal mengambil data dari Google Sheets.');
+                
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    dbOrdersList = result.data || [];
+                    renderDatabaseList(dbOrdersList);
+                } else {
+                    throw new Error(result.message || 'Database bermasalah.');
+                }
+            } catch (err) {
+                console.error(err);
+                ordersListContainer.innerHTML = `
+                    <div class="p-8 text-center text-sm text-red-500 font-medium">
+                        <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-red-400"></i>
+                        Gagal memuat database real-time. Coba segarkan kembali.
+                    </div>
+                `;
+                lucide.createIcons();
+            } finally {
+                dbLoader.classList.add('hidden');
+                dbContent.classList.remove('hidden');
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        // Render data list ke dalam UI
+        function renderDatabaseList(dataArray) {
+            ordersListContainer.innerHTML = '';
+
+            if (dataArray.length === 0) {
+                ordersListContainer.innerHTML = `
+                    <div class="p-12 text-center text-sm text-slate-400 italic">
+                        Belum ada yang memesan kaos. Jadilah yang pertama!
+                    </div>
+                `;
+                statsTotal.textContent = "0";
+                statsSizes.innerHTML = "";
+                return;
+            }
+
+            // Hitung ukuran statistika
+            const sizeCounts = {};
+            dataArray.forEach(item => {
+                const s = item.ukuran_kaos || '-';
+                sizeCounts[s] = (sizeCounts[s] || 0) + 1;
+            });
+
+            // Susun HTML statistika ukuran
+            let statsHtml = '';
+            Object.keys(sizeCounts).sort().forEach(size => {
+                statsHtml += `<span class="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full text-[10px]">${size}: ${sizeCounts[size]}</span>`;
+            });
+            statsSizes.innerHTML = statsHtml;
+            statsTotal.textContent = dataArray.length;
+
+            // Render baris data pemesan
+            dataArray.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'px-6 py-4 flex items-center justify-between text-sm hover:bg-slate-50 transition-colors';
+                
+                // Format tanggal timestamp
+                let dateStr = 'Baru saja';
+                if (item.timestamp) {
+                    try {
+                        const dateObj = new Date(item.timestamp);
+                        dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    } catch(e){}
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="space-y-1 pr-4">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="text-slate-400 text-xs">${index + 1}.</span>
+                            <span>${item.nama_lengkap}</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex items-center gap-2">
+                            <span>Kelas ${item.kelas}</span>
+                            <span>&bull;</span>
+                            <span>${dateStr}</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="inline-block bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold px-3 py-1.5 rounded-xl text-center min-w-[48px] text-xs md:text-sm">
+                            ${item.ukuran_kaos}
+                        </span>
+                    </div>
+                `;
+                ordersListContainer.appendChild(itemDiv);
+            });
+        }
+
+        // Fitur Pencarian Real-time di dalam Database List
+        searchDatabaseInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                renderDatabaseList(dbOrdersList);
+                return;
+            }
+
+            const filtered = dbOrdersList.filter(item => 
+                (item.nama_lengkap || '').toLowerCase().includes(query) || 
+                (item.kelas || '').toLowerCase().includes(query) ||
+                (item.ukuran_kaos || '').toLowerCase().includes(query)
+            );
+
+            renderDatabaseList(filtered);
+            // Tetap pertahankan total statistik global
+            statsTotal.textContent = filtered.length;
+        });
+
+        // Salin Rincian ke Clipboard
+        function copyToClipboard() {
+            const textToCopy = window.currentOrderMessage || '';
+            if (!textToCopy) return;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast();
+                }
+            } catch (err) {
+                console.error('Gagal menyalin teks', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showToast() {
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Reset Formulir untuk Pengisian Baru
+        function resetForm() {
+            orderForm.reset();
+            selectedStudent = null;
+            clearSearchBtn.classList.add('hidden');
+            searchResults.classList.add('hidden');
+            classInput.value = '';
+            navigateToView('form');
+        }
+
+        // Memulai aplikasi dengan mengambil data siswa
+        window.addEventListener('DOMContentLoaded', fetchSiswaData);
+    </script>
+</body>
+</html>
